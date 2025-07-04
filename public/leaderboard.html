@@ -5,20 +5,75 @@
     <title>GRECHA</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: Arial; max-width:600px; margin:40px auto;
-            background-image:url("/public/bg1.jpg"); background-attachment:fixed; background-position:center; }
-        h1 { text-align:center; color:ivory; text-shadow:4px 4px 5px #9541AC; }
-        #leaderboard { display:flex; flex-direction:column; margin:0 5px; background:rgba(120,103,197,0.8); }
-        .leaderboard-header, .leaderboard-item { display:flex; justify-content:space-between; padding:7px;
-            box-shadow:0 1px 0 rgba(0,0,0,0.3); }
-        .leaderboard-header { position:sticky; top:0; background:#bb37fc; font-weight:700; font-size:18px; }
-        .col-1 { width:10%; }
-        .col-2 { width:70%; text-align:left; font-family:monospace; overflow:hidden; text-overflow:ellipsis; }
-        .col-3 { width:20%; text-align:right; }
-        .leaderboard-item .col-1, .leaderboard-item .col-3 { font-size:17px; }
-        .leaderboard-item .col-2 { font-weight:700; font-size:16px; }
-        .error { color:ivory; text-align:center; padding:10px; }
-        .nft-details ul { margin:5px 0 0; padding-left:20px; }
+        body {
+            font-family: Arial;
+            max-width:600px;
+            margin:40px auto;
+            background-image:url("/public/bg1.jpg");
+            background-attachment:fixed;
+            background-position:center;
+        }
+        h1 {
+            text-align:center;
+            color:ivory;
+            text-shadow:4px 4px 5px #9541AC;
+        }
+        #leaderboard {
+            display:flex;
+            flex-direction:column;
+            margin:0 5px;
+            background:rgba(120,103,197,0.8);
+        }
+        .leaderboard-header, .leaderboard-item {
+            display:flex;
+            justify-content:space-between;
+            padding:7px;
+            box-shadow:0 1px 0 rgba(0,0,0,0.3);
+        }
+        .leaderboard-header {
+            position:sticky;
+            top:0;
+            background:#bb37fc;
+            font-weight:700;
+            font-size:18px;
+        }
+        .col-1 {
+            width:10%;
+        }
+        .col-2 {
+            width:70%;
+            text-align:left;
+            font-family:monospace;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        .col-3 {
+            width:20%;
+            text-align:right;
+        }
+        .leaderboard-item .col-1, .leaderboard-item .col-3 {
+            font-size:17px;
+        }
+        .leaderboard-item .col-2 {
+            font-weight:700;
+            font-size:16px;
+            cursor: pointer;
+        }
+        .nft-details {
+            background: #9932ccd6;
+        }
+        .nft-details > strong {
+            color: gainsboro;
+        }
+        .error {
+            color:ivory;
+            text-align:center;
+            padding:10px;
+        }
+        .nft-details ul {
+            margin:5px 0 0;
+            padding-left:20px;
+        }
     </style>
 </head>
 <body>
