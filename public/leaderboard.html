@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <title>GRECHA & NFT Leaderboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 1rem; }
+        details { margin: .5rem 0; border: 1px solid #ccc; border-radius: 4px; }
+        summary { display: flex; gap: 1rem; padding: .5rem; cursor: pointer; background: #f9f9f9; }
+        .tokens { padding: .5rem 1rem; background: #fff; }
+        .token-item { display: flex; justify-content: space-between; padding: .25rem 0; border-bottom: 1px solid #eee; }
+        .token-item:last-child { border-bottom: none; }
+        .controls input { margin-right: .5rem; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+<h1>GRECHA & NFT Leaderboard</h1>
+<div class="controls">
+    <label>Wallet ID: <input id="wallet" value="feed_yupiks.near"/></label>
+    <button id="refresh">Обновить</button>
+</div>
+<div id="board"></div>
+
+<script>
+    const API = '/api/nft-yupik-checker';
+
+    document.getElementById('refresh').onclick = fetchBoard;
+    window.addEventListener('DOMContentLoaded', fetchBoard);
+
+    async function fetchBoard() {
+        const w = document.getElementById('wallet').value.trim();
+        const container = document.getElementById('board');
+        container.innerHTML = '';
+        if (!w) {
+            container.innerHTML = '<div class="error">Укажите wallet_id.</div>';
+            return;
+        }
+
+        const params = new URLSearchParams({ wallet_id: w, symbol: 'GRECHA', limit: 200, skip: 0 });
+        const resp = await fetch(`${API}?${params}`);
+        if (!resp.ok) {
+            container.innerHTML = `<div class="error">API error: ${resp.status}</div>`;
+            return;
+        }
+        const { leaderboard } = await resp.json();
+        if (!leaderboard.length) {
+            container.innerHTML = '<div class="error">Нет данных.</div>';
+            return;
+        }
+
+        leaderboard.forEach((item, i) => {
+            const det = document.createElement('details');
+            const sum = document.createElement('summary');
+            sum.innerHTML = `<div>${i+1}</div><div>${item.wallet}</div><div>${item.totalFt.toFixed(2)}</div>`;
+            det.appendChild(sum);
+
+            const tokensDiv = document.createElement('div');
+            tokensDiv.className = 'tokens';
+
+            item.groups.forEach(g => {
+                const ti = document.createElement('div');
+                ti.className = 'token-item';
+                ti.innerHTML = `<span>${g.name}</span><span>${g.count}</span>`;
+                tokensDiv.appendChild(ti);
+            });
+
+            det.appendChild(tokensDiv);
+            container.appendChild(det);
+        });
+    }
+</script>
+</body>
+</html>
