@@ -178,31 +178,24 @@
 
         try {
             let data = await fetchAll();
-            // Фильтрация по дате
             data = data.filter(tx => {
                 const txMs = Number(tx.timestamp_nanosec) / 1e6;
                 return txMs >= sinceMs && txMs <= untilMs;
             });
 
-            // Сбор статистики: сумма и первая дата
             const stats = {};
             data.forEach(tx => {
                 const wallet = tx.from;
                 const txMs = Number(tx.timestamp_nanosec) / 1e6;
                 const amount = parseFloat(tx.amount) / 1000 || 0;
-
-                if (!stats[wallet]) {
-                    stats[wallet] = { total: 0, firstMs: txMs };
-                }
+                if (!stats[wallet]) stats[wallet] = { total: 0, firstMs: txMs };
                 stats[wallet].total += amount;
-                if (txMs < stats[wallet].firstMs) {
-                    stats[wallet].firstMs = txMs;
-                }
+                if (txMs < stats[wallet].firstMs) stats[wallet].firstMs = txMs;
             });
 
             const sorted = Object.entries(stats)
-                .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
-                .sort((a, b) => a.firstMs - b.firstMs);
+                .map(([wallet,{total,firstMs}])=>({wallet,total,firstMs}))
+                .sort((a,b)=>a.firstMs-b.firstMs);
 
             if (sorted.length === 0) {
                 container.innerHTML = `
@@ -213,18 +206,16 @@
                 return;
             }
 
-            // Рендер строк и привязка клика
-            sorted.forEach((item, i) => {
+            sorted.forEach((item,i)=> {
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
-                  <div class="col-1">${i + 1}</div>
+                  <div class="col-1">${i+1}</div>
                   <div class="col-2">${item.wallet}</div>
-                  <div class="col-3">${item.total.toLocaleString(undefined, {
-                    minimumFractionDigits: 3,
-                    maximumFractionDigits: 3
+                  <div class="col-3">${item.total.toLocaleString(undefined,{
+                    minimumFractionDigits:3,maximumFractionDigits:3
                 })}</div>`;
-                row.addEventListener('click', () => toggleNFTDetails(item.wallet, row));
+                row.addEventListener('click',()=>toggleNFTDetails(item.wallet,row));
                 container.appendChild(row);
             });
         } catch (err) {
@@ -255,26 +246,24 @@
         }
     }
 
-    // Запрашивает NFT и группирует их по ключевым словам в title
+    // Запрашивает NFT и группирует их по ключевым словам в metadata.title
     async function fetchAndGroupNFTs(ownerId) {
         const url = new URL(NFT_API_BASE);
         url.searchParams.set('owner_id', ownerId);
         url.searchParams.set('contract_address', CONTRACT_ADDRESS);
 
         const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error(`API ${resp.status}`);
-        }
+        if (!resp.ok) throw new Error(`API ${resp.status}`);
         const data = await resp.json();
-        const tokens = Array.isArray(data) ? data : (data.tokens || []);
+        // теперь массив лежит в data.nfts
+        const tokens = Array.isArray(data.nfts) ? data.nfts : [];
 
-        const counts = NFT_GROUPS.reduce((acc, g) => {
-            acc[g] = 0;
-            return acc;
-        }, {});
+        // инициализируем счётчики групп
+        const counts = NFT_GROUPS.reduce((acc,g)=>{ acc[g]=0; return acc; },{});
 
         tokens.forEach(token => {
-            const title = (token.title || '').toLowerCase();
+            // берём заголовок из metadata.title
+            const title = (token.metadata?.title || '').toLowerCase();
             for (const group of NFT_GROUPS) {
                 if (title.includes(group.toLowerCase())) {
                     counts[group]++;
@@ -286,8 +275,7 @@
         return counts;
     }
 
-    document.getElementById('apply-filter')
-        .addEventListener('click', renderBoard);
+    document.getElementById('apply-filter').addEventListener('click', renderBoard);
     window.addEventListener('DOMContentLoaded', renderBoard);
 </script>
 </body>
