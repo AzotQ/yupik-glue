@@ -1,6 +1,4 @@
 // api/grecha.js
-// На основе оригинала :contentReference[oaicite:0]{index=0}, добавлено проксирование запроса за NFT
-
 import fetch from 'node-fetch';
 
 const BASE_URL = 'https://dialog-tbot.com/history/ft-transfers/';
@@ -18,7 +16,7 @@ export default async function handler(req, res) {
         skip  = DEFAULT_SKIP
     } = req.query;
 
-    // 1) Если пришли параметры owner_id + contract_address — проксируем запрос за NFT
+    // 1) Проксирование запроса за NFT
     if (owner_id && contract_address) {
         const upstreamUrl = new URL(NFT_URL);
         upstreamUrl.searchParams.set('owner_id', owner_id);
@@ -39,7 +37,7 @@ export default async function handler(req, res) {
         }
     }
 
-    // 2) Иначе — старый функционал по FT-трансферам
+    // 2) Старый функционал по FT-трансферам
     if (!wallet_id || !symbol) {
         return res
             .status(400)
