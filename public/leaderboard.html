@@ -150,8 +150,11 @@
 
                         const groups = [
                             'common','uncommon','rare','epic','legendary',
-                            '4th generation','3th generation','2th generation','1th generation','0 generation'
-                        ];
+                            '4th generation','3 generations','2nd generation','1st generation','0 generation'
+                        ]
+                            // Сортируем так, чтобы 'uncommon' (9 символов) шёл раньше 'common' (6 символов)
+                            .sort((a, b) => b.length - a.length);
+
                         const counts = {};
                         groups.forEach(g => counts[g] = 0);
 
