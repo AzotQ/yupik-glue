@@ -1,15 +1,12 @@
-/* grecha.js (клиент) */
+// grecha.js
+const API_PATH         = '/api/nft-yupik-checker';
+const WALLET_ID        = 'feed_yupiks.near';
+const SYMBOL           = 'GRECHA';
+const BATCH            = 200;
+const MIN_INTERVAL     = 5 * 60 * 1000;  // 5 минут
+const NFT_API_BASE     = 'https://dialog-tbot.com/nft/by-owner-contract/';
+const CONTRACT_ADDRESS = 'darai.mintbase1.near';
 
-// Константы API
-const API_PATH           = '/api/nft-yupik-checker';
-const NFT_PROXY_PATH     = '/api/nfts';
-const WALLET_ID          = 'feed_yupiks.near';
-const SYMBOL             = 'GRECHA';
-const BATCH              = 200;
-const MIN_INTERVAL       = 5 * 60 * 1000;  // 5 минут
-const CONTRACT_ADDRESS   = 'darai.mintbase1.near';
-
-// Группы по ключевым словам в title
 const NFT_GROUPS = [
     'common','uncommon','rare','epic','legendary',
     '4th generation','3th generation','2th generation','1th generation','0 generation'
@@ -17,6 +14,7 @@ const NFT_GROUPS = [
 
 let lastFetchTime = 0;
 
+// Возвращает диапазон фильтра из полей
 function getFilterRange() {
     const sinceStr = document.getElementById('since-input').value;
     const untilStr = document.getElementById('until-input').value;
@@ -28,8 +26,9 @@ function getFilterRange() {
     };
 }
 
+// Забираем все FT-транзакции через API-прокси
 async function fetchAll() {
-    let all = [];
+    const all = [];
     for (let skip = 0; ; skip += BATCH) {
         const url = `${API_PATH}`
             + `?wallet_id=${encodeURIComponent(WALLET_ID)}`
@@ -39,13 +38,14 @@ async function fetchAll() {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`API ${resp.status}`);
         const { transfers } = await resp.json();
-        if (!Array.isArray(transfers) || !transfers.length) break;
+        if (!Array.isArray(transfers) || transfers.length === 0) break;
         all.push(...transfers);
         if (transfers.length < BATCH) break;
     }
     return all;
 }
 
+// Рендерим доску и вешаем клики
 async function renderBoard() {
     const now = Date.now();
     if (now - lastFetchTime < MIN_INTERVAL) return;
@@ -65,18 +65,20 @@ async function renderBoard() {
         const stats = {};
         data.forEach(tx => {
             const wallet = tx.from;
-            const txMs = Number(tx.timestamp_nanosec) / 1e6;
+            const txMs   = Number(tx.timestamp_nanosec) / 1e6;
             const amount = parseFloat(tx.amount) / 1000 || 0;
-            if (!stats[wallet]) stats[wallet] = { total: 0, firstMs: txMs };
+            if (!stats[wallet]) {
+                stats[wallet] = { total: 0, firstMs: txMs };
+            }
             stats[wallet].total += amount;
             if (txMs < stats[wallet].firstMs) stats[wallet].firstMs = txMs;
         });
 
         const sorted = Object.entries(stats)
-            .map(([w, { total, firstMs }]) => ({ wallet: w, total, firstMs }))
+            .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
             .sort((a, b) => a.firstMs - b.firstMs);
 
-        if (!sorted.length) {
+        if (sorted.length === 0) {
             container.innerHTML = `
         <div class="error">
           Нет переводов в период<br>
@@ -89,9 +91,12 @@ async function renderBoard() {
             const row = document.createElement('div');
             row.className = 'leaderboard-item';
             row.innerHTML = `
-        <div class="col-1">${i+1}</div>
+        <div class="col-1">${i + 1}</div>
         <div class="col-2">${item.wallet}</div>
-        <div class="col-3">${item.total.toLocaleString(undefined, { minimumFractionDigits:3, maximumFractionDigits:3 })}</div>`;
+        <div class="col-3">${item.total.toLocaleString(undefined, {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3
+            })}</div>`;
             row.addEventListener('click', () => toggleNFTDetails(item.wallet, row));
             container.appendChild(row);
         });
@@ -101,17 +106,19 @@ async function renderBoard() {
     }
 }
 
-async function toggleNFTDetails(wallet, row) {
+// Переключаем блок с деталями NFT
+async function toggleNFTDetails(ownerId, row) {
     const next = row.nextElementSibling;
     if (next && next.classList.contains('nft-details')) {
         next.remove();
         return;
     }
-    const tmpl = document.getElementById('nft-details-template').content.cloneNode(true);
-    const tbody = tmpl.querySelector('tbody');
-    row.after(tmpl);
+    const details = document.getElementById('nft-details-template').content.cloneNode(true);
+    const tbody   = details.querySelector('tbody');
+    row.after(details);
+
     try {
-        const groups = await fetchAndGroupNFTs(wallet);
+        const groups = await fetchAndGroupNFTs(ownerId);
         for (const [group, count] of Object.entries(groups)) {
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${group}</td><td>${count}</td>`;
@@ -122,17 +129,24 @@ async function toggleNFTDetails(wallet, row) {
     }
 }
 
+// Прямой запрос к внешнему NFT-API и группировка по metadata.title
 async function fetchAndGroupNFTs(ownerId) {
-    // Вызываем внутренний Proxy API вместо прямого обращения к внешнему
-    const proxyUrl = `${NFT_PROXY_PATH}`
-        + `?owner_id=${encodeURIComponent(ownerId)}`
-        + `&contract_address=${encodeURIComponent(CONTRACT_ADDRESS)}`;
-    const resp = await fetch(proxyUrl);
-    if (!resp.ok) throw new Error(`Proxy API ${resp.status}`);
-    const data = await resp.json();
+    const url = new URL(NFT_API_BASE);
+    url.searchParams.set('owner_id', ownerId);
+    url.searchParams.set('contract_address', CONTRACT_ADDRESS);
+
+    const resp = await fetch(url.toString());
+    if (!resp.ok) {
+        throw new Error(`NFT API ${resp.status}`);
+    }
+    const data   = await resp.json();
     const tokens = Array.isArray(data.nfts) ? data.nfts : [];
 
-    const counts = NFT_GROUPS.reduce((acc, g) => { acc[g] = 0; return acc; }, {});
+    const counts = NFT_GROUPS.reduce((acc, g) => {
+        acc[g] = 0;
+        return acc;
+    }, {});
+
     tokens.forEach(token => {
         const title = (token.metadata?.title || '').toLowerCase();
         for (const group of NFT_GROUPS) {
@@ -142,6 +156,7 @@ async function fetchAndGroupNFTs(ownerId) {
             }
         }
     });
+
     return counts;
 }
 
