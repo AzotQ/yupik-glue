@@ -55,7 +55,7 @@
     // Коэффициенты по группам
     const GROUPS = [
         'common','uncommon','rare','epic','legendary',
-        '4th generation','3 generations','3rd generation','2nd generation','1st generation','0 generation'
+        '4th generation','3 generations','3rd generation','2nd generation','1st generation','0th generation','0 generation'
     ].sort((a, b) => b.length - a.length);
 
     const COEFFS = {
@@ -69,6 +69,7 @@
         '3rd generation': 3.5,
         '2nd generation': 4,
         '1st generation': 4.5,
+        '0th generation': 5,
         '0 generation': 5
     };
 
@@ -185,7 +186,7 @@
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
                         details.innerHTML = `
-                <strong>NFT по группам (сумма: ${totalScore.toLocaleString(undefined, {
+                <strong>Юпики на кошельке (Максимальная сумма для кормления: ${totalScore.toLocaleString(undefined, {
                             minimumFractionDigits: 1,
                             maximumFractionDigits: 2
                         })}):</strong>
