@@ -52,6 +52,26 @@
     const BATCH        = 200;
     const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
 
+    // Коэффициенты по группам
+    const GROUPS = [
+        'common','uncommon','rare','epic','legendary',
+        '4th generation','3 generations','3rd generation','2nd generation','1st generation','0 generation'
+    ].sort((a, b) => b.length - a.length);
+
+    const COEFFS = {
+        common: 0.5,
+        uncommon: 1,
+        rare: 1.5,
+        epic: 2,
+        legendary: 2.5,
+        '4th generation': 3,
+        '3 generations': 3.5,
+        '3rd generation': 3.5,
+        '2nd generation': 4,
+        '1st generation': 4.5,
+        '0 generation': 5
+    };
+
     let lastFetchTime = 0;
 
     function getFilterRange() {
@@ -145,33 +165,37 @@
                             `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=darai.mintbase1.near`
                         );
                         const data = await resp.json();
-                        // Берём массив из data.nfts
                         const tokens = Array.isArray(data.nfts) ? data.nfts : [];
 
-                        const groups = [
-                            'common','uncommon','rare','epic','legendary',
-                            '4th generation','3 generations','3rd generation','2nd generation','1st generation','0 generation'
-                        ]
-                            // Сортируем так, чтобы 'uncommon' (9 символов) шёл раньше 'common' (6 символов)
-                            .sort((a, b) => b.length - a.length);
-
+                        // Группируем и считаем
                         const counts = {};
-                        groups.forEach(g => counts[g] = 0);
-
+                        GROUPS.forEach(g => counts[g] = 0);
                         tokens.forEach(token => {
                             const title = (token.metadata?.title || '').toLowerCase();
-                            const found = groups.find(g => title.includes(g));
+                            const found = GROUPS.find(g => title.includes(g));
                             if (found) counts[found]++;
                         });
 
+                        // Подсчитываем итоговую сумму с коэффициентами
+                        const totalScore = Object.entries(counts)
+                            .reduce((sum, [g, c]) => sum + (COEFFS[g] || 0) * c, 0);
+
+                        // Рисуем блок деталей
                         details = document.createElement('div');
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
-                        details.innerHTML = `<strong>NFT по группам:</strong>
-                <ul>${Object.entries(counts)
+                        details.innerHTML = `
+                <strong>NFT по группам (сумма: ${totalScore.toLocaleString(undefined, {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 2
+                        })}):</strong>
+                <ul>
+                  ${Object.entries(counts)
                             .filter(([_,c]) => c > 0)
-                            .map(([g,c]) => `<li>${g}: ${c}</li>`)
-                            .join('')}</ul>`;
+                            .map(([g, c]) =>
+                                `<li>${g}: ${c} (×${COEFFS[g]})</li>`
+                            ).join('')}
+                </ul>`;
 
                         row.insertAdjacentElement('afterend', details);
                     } catch (err) {
